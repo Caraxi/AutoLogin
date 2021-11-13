@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup Label="Target">
+        <PlatformTarget>x64</PlatformTarget>
+        <TargetFramework>net5.0-windows</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Platforms>x64</Platforms>
+    </PropertyGroup>
+    <PropertyGroup Label="Build">
+        <OutputType>Library</OutputType>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+    <PropertyGroup Label="Feature">
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Version>1.0.0.0</Version>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
+        <Deterministic>true</Deterministic>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+        <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="DalamudPackager" Version="2.1.2"/>
+        <PackageReference Include="ILRepack" Version="2.1.0-beta1" GeneratePathProperty="true"/>
+        <Compile Remove="lib\**"/>
+        <EmbeddedResource Remove="lib\**"/>
+        <None Remove="lib\**"/>
+        <Compile Remove="FFXIVClientStructs\**"/>
+        <EmbeddedResource Remove="FFXIVClientStructs\**"/>
+        <None Remove="FFXIVClientStructs\**"/>
+    </ItemGroup>
+    <Target Name="ILRepack" AfterTargets="PostBuildEvent">
+        <ItemGroup>
+            <InputAssemblies Include="$(TargetPath)"/>
+            <InputAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)"/>
+        </ItemGroup>
+        <Exec Command="$(PkgILRepack)\tools\ILRepack.exe /lib:$(AppData)\XIVLauncher\addon\Hooks\dev /out:$(TargetDir)..\$(Configuration).ILMerge\$(TargetFileName) @(InputAssemblies, ' ')"/>
+    </Target>
+    <Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+        <DalamudPackager ProjectDir="$(ProjectDir)" OutputPath="$(OutputPath)..\$(Configuration).ILMerge" AssemblyName="$(AssemblyName)" MakeZip="true"/>
+    </Target>
+    <ItemGroup>
+        <Reference Include="Dalamud">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
+        </Reference>
+        <Reference Include="FFXIVClientStructs">
+            <Private>true</Private>
+            <HintPath>$(SolutionDir)\FFXIVClientStructs\bin\$(ConfigurationName)\FFXIVClientStructs.dll</HintPath>
+        </Reference>
+        <Reference Include="ImGui.NET">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
+        </Reference>
+        <Reference Include="Lumina">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
+        </Reference>
+        <Reference Include="Lumina.Excel">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+</Project>
