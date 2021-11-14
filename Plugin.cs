@@ -95,6 +95,8 @@ namespace AutoLogin {
             var addon = (AtkUnitBase*) Service.GameGui.GetAddonByName("_TitleMenu", 1);
             if (addon == null) return false;
             GenerateCallback(addon, 12);
+            var nextAddon = (AtkUnitBase*) Service.GameGui.GetAddonByName("TitleDCWorldMap", 1);
+            if (nextAddon == null) return false;
             return true;
         }
 
