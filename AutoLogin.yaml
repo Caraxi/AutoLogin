@@ -3,5 +3,5 @@ author: Caraxi
 description: No, really... exactly what it says
 punchline: Does exactly what it says
 repo_url: https://github.com/Caraxi/AutoLogin
-dalamud_api_level: 4
+dalamud_api_level: 5
 load_priority: 1

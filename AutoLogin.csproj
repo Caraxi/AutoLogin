@@ -25,33 +25,16 @@
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="DalamudPackager" Version="2.1.2"/>
-        <PackageReference Include="ILRepack" Version="2.1.0-beta1" GeneratePathProperty="true"/>
-        <Compile Remove="lib\**"/>
-        <EmbeddedResource Remove="lib\**"/>
-        <None Remove="lib\**"/>
-        <Compile Remove="FFXIVClientStructs\**"/>
-        <EmbeddedResource Remove="FFXIVClientStructs\**"/>
-        <None Remove="FFXIVClientStructs\**"/>
+        <PackageReference Include="DalamudPackager" Version="2.1.5" />
     </ItemGroup>
-    <Target Name="ILRepack" AfterTargets="PostBuildEvent">
-        <ItemGroup>
-            <InputAssemblies Include="$(TargetPath)"/>
-            <InputAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)"/>
-        </ItemGroup>
-        <Exec Command="$(PkgILRepack)\tools\ILRepack.exe /lib:$(AppData)\XIVLauncher\addon\Hooks\dev /out:$(TargetDir)..\$(Configuration).ILMerge\$(TargetFileName) @(InputAssemblies, ' ')"/>
-    </Target>
-    <Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
-        <DalamudPackager ProjectDir="$(ProjectDir)" OutputPath="$(OutputPath)..\$(Configuration).ILMerge" AssemblyName="$(AssemblyName)" MakeZip="true"/>
-    </Target>
     <ItemGroup>
         <Reference Include="Dalamud">
             <Private>false</Private>
             <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
         </Reference>
         <Reference Include="FFXIVClientStructs">
-            <Private>true</Private>
-            <HintPath>$(SolutionDir)\FFXIVClientStructs\bin\$(ConfigurationName)\FFXIVClientStructs.dll</HintPath>
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\FFXIVClientStructs.dll</HintPath>
         </Reference>
         <Reference Include="ImGui.NET">
             <Private>false</Private>

@@ -114,7 +114,7 @@ namespace AutoLogin {
             var addon = (AtkUnitBase*) Service.GameGui.GetAddonByName("_CharaSelectWorldServer", 1);
             if (addon == null) return false;
 
-            var stringArray = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->RaptureAtkModule.AtkModule.AtkArrayDataHolder.StringArrays[1];
+            var stringArray = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetRaptureAtkModule()->AtkModule.AtkArrayDataHolder.StringArrays[1];
             if (stringArray == null) return false;
 
             var world = Service.Data.Excel.GetSheet<World>()?.GetRow(PluginConfig.World);

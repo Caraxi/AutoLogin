@@ -41,7 +41,7 @@ namespace AutoLogin {
             if (ImGui.Begin($"{plugin.Name} Config", ref drawConfig, windowFlags)) {
 
                 if (ImGui.BeginCombo("Data Center", DataCenter == 0 ? "Not Selected" : currentDc.Name.RawString)) {
-                    foreach (var dc  in dcSheet.Where(w => w.Region > 0)) {
+                    foreach (var dc  in dcSheet.Where(w => w.Region > 0 && w.Name.RawString.Trim().Length > 0)) {
                         if (ImGui.Selectable(dc.Name.RawString, dc.RowId == DataCenter)) {
                             DataCenter = dc.RowId;
                             Save();
