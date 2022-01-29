@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game;
+using Dalamud.Game.ClientState.Keys;
+using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using Dalamud.Memory;
 using Dalamud.Plugin;
@@ -45,6 +47,7 @@ namespace AutoLogin {
 
             Service.Framework.Update += OnFrameworkUpdate;
             if (PluginConfig.DataCenter != 0 && PluginConfig.World != 0) {
+                Service.PluginInterface.UiBuilder.AddNotification("Starting AutoLogin Process.\nPress and hold shift to cancel.", "Auto Login", NotificationType.Info);
                 actionQueue.Enqueue(OpenDataCenterMenu);
                 actionQueue.Enqueue(SelectDataCentre);
                 actionQueue.Enqueue(SelectWorld);
@@ -62,6 +65,10 @@ namespace AutoLogin {
             }
             if (!sw.IsRunning) sw.Restart();
 
+            if (Service.KeyState[VirtualKey.SHIFT]) {
+                Service.PluginInterface.UiBuilder.AddNotification("AutoLogin Cancelled.", "AutoLogin", NotificationType.Warning);
+                actionQueue.Clear();
+            }
 
             if (Service.Condition.Any() || sw.ElapsedMilliseconds > 10000) {
                 actionQueue.Clear();
