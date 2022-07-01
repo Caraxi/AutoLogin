@@ -20,6 +20,7 @@ namespace AutoLogin {
         [PluginService] public static GameGui GameGui { get; private set; }
         [PluginService] public static SigScanner SigScanner { get; private set; }
         [PluginService] public static KeyState KeyState { get; private set; }
+        [PluginService] public static ChatGui Chat { get; private set; }
 
         // Fake Services
         public static UiBuilder UiBuilder => PluginInterface?.UiBuilder;

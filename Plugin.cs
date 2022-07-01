@@ -5,10 +5,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Keys;
+using Dalamud.Game.Command;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using Dalamud.Memory;
 using Dalamud.Plugin;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
@@ -28,6 +31,7 @@ namespace AutoLogin {
             Service.UiBuilder.Draw -= DrawUI;
             Service.UiBuilder.OpenConfigUi -= this.OpenConfigUI;
             Service.Commands.RemoveHandler("/autologinconfig");
+            Service.Commands.RemoveHandler("/swapcharacter");
         }
 
         public Plugin(DalamudPluginInterface pluginInterface) {
@@ -45,6 +49,14 @@ namespace AutoLogin {
                 ShowInHelp = true
             });
 
+            if (Service.Commands.Commands.ContainsKey("/swapcharacter")) {
+                Service.Commands.RemoveHandler("/swapcharacter");
+            }
+            Service.Commands.AddHandler("/swapcharacter", new CommandInfo(OnSwapCharacterCommandHandler) {
+                HelpMessage = $"Swap character /swapcharacter <World.Name> <Character.Index>",
+                ShowInHelp = true
+            });
+
             Service.Framework.Update += OnFrameworkUpdate;
             if (PluginConfig.DataCenter != 0 && PluginConfig.World != 0) {
                 Service.PluginInterface.UiBuilder.AddNotification("Starting AutoLogin Process.\nPress and hold shift to cancel.", "Auto Login", NotificationType.Info);
@@ -56,7 +68,58 @@ namespace AutoLogin {
             }
         }
 
+        private void OnSwapCharacterCommandHandler(string command, string arguments) {
+
+            var args = arguments.Split(' ');
+
+            void ShowHelp() => Service.Chat.PrintError("/swapcharacter <World.Name> <Character.Index>");
+
+            if (args.Length != 2) {
+                ShowHelp();
+                return;
+            }
+
+            var world = Service.Data.Excel.GetSheet<World>()?.FirstOrDefault(w => w.Name.ToDalamudString().TextValue.Equals(args[0], StringComparison.InvariantCultureIgnoreCase));
+
+            if (world == null) {
+                Service.Chat.PrintError($"'{args[0]}' is not a valid world name.");
+                ShowHelp();
+                return;
+            }
+
+            if (!uint.TryParse(args[1], out var characterIndex) || characterIndex >= 8) {
+                Service.Chat.PrintError("Invalid Character Index. Must be between 0 and 7.");
+                ShowHelp();
+                return;
+            }
+
+            tempDc = world.DataCenter.Row;
+            tempWorld = world.RowId;
+            tempCharacter = characterIndex;
+            actionQueue.Clear();
+            actionQueue.Enqueue(VariableDelay(5));
+            actionQueue.Enqueue(Logout);
+            actionQueue.Enqueue(SelectYes);
+            actionQueue.Enqueue(VariableDelay(5));
+            actionQueue.Enqueue(OpenDataCenterMenu);
+            actionQueue.Enqueue(SelectDataCentre);
+            actionQueue.Enqueue(SelectWorld);
+            actionQueue.Enqueue(SelectCharacter);
+            actionQueue.Enqueue(SelectYes);
+            actionQueue.Enqueue(Delay5s);
+            actionQueue.Enqueue(ClearTemp);
+        }
+
         private readonly Stopwatch sw = new();
+        private uint Delay = 0;
+
+        private Func<bool> VariableDelay(uint frameDelay) {
+            return () => {
+                Delay = frameDelay;
+                return true;
+            };
+        }
+
 
         private void OnFrameworkUpdate(Framework framework) {
             if (actionQueue.Count == 0) {
@@ -70,7 +133,14 @@ namespace AutoLogin {
                 actionQueue.Clear();
             }
 
-            if (Service.Condition.Any() || sw.ElapsedMilliseconds > 10000) {
+            if (VariableDelay > 0) {
+                VariableDelay -= 1;
+                return;
+            }
+            
+            
+
+            if (sw.ElapsedMilliseconds > 10000) {
                 actionQueue.Clear();
                 return;
             }
@@ -91,6 +161,12 @@ namespace AutoLogin {
         private readonly Queue<Func<bool>> actionQueue = new();
 
         public void OnConfigCommandHandler(string command, string args) {
+            #if DEBUG
+            if (args.ToLowerInvariant() == "debug") {
+                drawDebugWindow = true;
+                return;
+            }
+            #endif
             OpenConfigUI();
         }
 
@@ -110,7 +186,7 @@ namespace AutoLogin {
         public bool SelectDataCentre() {
             var addon = (AtkUnitBase*) Service.GameGui.GetAddonByName("TitleDCWorldMap", 1);
             if (addon == null) return false;
-            GenerateCallback(addon, 2, (int) PluginConfig.DataCenter);
+            GenerateCallback(addon, 2, (int) (tempDc ?? PluginConfig.DataCenter));
             return true;
         }
 
@@ -124,7 +200,7 @@ namespace AutoLogin {
             var stringArray = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->UIModule->GetRaptureAtkModule()->AtkModule.AtkArrayDataHolder.StringArrays[1];
             if (stringArray == null) return false;
 
-            var world = Service.Data.Excel.GetSheet<World>()?.GetRow(PluginConfig.World);
+            var world = Service.Data.Excel.GetSheet<World>()?.GetRow(tempWorld ?? PluginConfig.World);
             if (world is not { IsPublic: true }) return false;
 
             var checkedWorldCount = 0;
@@ -148,7 +224,7 @@ namespace AutoLogin {
             // Select Character
             var addon = (AtkUnitBase*) Service.GameGui.GetAddonByName("_CharaSelectListMenu", 1);
             if (addon == null) return false;
-            GenerateCallback(addon, 17, 0, PluginConfig.CharacterSlot);
+            GenerateCallback(addon, 17, 0, tempCharacter ?? PluginConfig.CharacterSlot);
             var nextAddon = (AtkUnitBase*) Service.GameGui.GetAddonByName("SelectYesno", 1);
             return nextAddon != null;
         }
@@ -161,11 +237,45 @@ namespace AutoLogin {
             return true;
         }
 
+
+        public bool Delay5s() {
+            VariableDelay = 300;
+            return true;
+        }
+        
+
+        public bool Delay1s() {
+            VariableDelay = 60;
+            return true;
+        }
+        
+        public bool Logout() {
+            var isLoggedIn = Service.Condition.Any();
+            if (!isLoggedIn) return true;
+
+            FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->ExecuteMainCommand(23);
+            return true;
+        }
+
+        public bool ClearTemp() {
+            tempWorld = null;
+            tempDc = null;
+            tempCharacter = null;
+            return true;
+        }
+        
+
+        private uint? tempDc = null;
+        private uint? tempWorld = null;
+        private uint? tempCharacter = null;
+#if DEBUG
+        private bool drawDebugWindow = false;
+#endif
         private void DrawUI() {
             drawConfigWindow = drawConfigWindow && PluginConfig.DrawConfigUI();
 #if DEBUG
-
-            if (ImGui.Begin($"{this.Name} Debugging")) {
+            if (!drawDebugWindow) return;
+            if (ImGui.Begin($"{this.Name} Debugging", ref drawDebugWindow)) {
                 if (ImGui.Button("Open Config")) drawConfigWindow = true;
                 if (ImGui.Button("Clear Queue")) {
                     actionQueue.Clear();
@@ -187,6 +297,31 @@ namespace AutoLogin {
                 if (ImGui.Button("Test Step: SELECT YES")) {
                     actionQueue.Clear();
                     actionQueue.Enqueue(SelectYes);
+                }
+
+                if (ImGui.Button("Logout")) {
+                    actionQueue.Clear();
+                    actionQueue.Enqueue(Logout);
+                    actionQueue.Enqueue(SelectYes);
+                    actionQueue.Enqueue(Delay5s);
+                }
+
+                
+                
+                if (ImGui.Button("Swap Character")) {
+                    tempDc = 9;
+                    tempWorld = 87;
+                    tempCharacter = 0;
+                    
+                    actionQueue.Enqueue(Logout);
+                    actionQueue.Enqueue(SelectYes);
+                    actionQueue.Enqueue(OpenDataCenterMenu);
+                    actionQueue.Enqueue(SelectDataCentre);
+                    actionQueue.Enqueue(SelectWorld);
+                    actionQueue.Enqueue(SelectCharacter);
+                    actionQueue.Enqueue(SelectYes);
+                    actionQueue.Enqueue(Delay5s);
+                    actionQueue.Enqueue(ClearTemp);
                 }
 
                 if (ImGui.Button("Full Run")) {
