@@ -100,7 +100,7 @@ namespace AutoLogin {
 
         public bool OpenDataCenterMenu() {
             var addon = (AtkUnitBase*) Service.GameGui.GetAddonByName("_TitleMenu", 1);
-            if (addon == null) return false;
+            if (addon == null || addon->IsVisible == false) return false;
             GenerateCallback(addon, 12);
             var nextAddon = (AtkUnitBase*) Service.GameGui.GetAddonByName("TitleDCWorldMap", 1);
             if (nextAddon == null) return false;
@@ -154,10 +154,10 @@ namespace AutoLogin {
         }
 
         public bool SelectYes() {
-            // Select Character
             var addon = (AtkUnitBase*) Service.GameGui.GetAddonByName("SelectYesno", 1);
             if (addon == null) return false;
             GenerateCallback(addon, 0);
+            addon->Hide(true);
             return true;
         }
 
