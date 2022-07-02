@@ -133,8 +133,8 @@ namespace AutoLogin {
                 actionQueue.Clear();
             }
 
-            if (VariableDelay > 0) {
-                VariableDelay -= 1;
+            if (Delay > 0) {
+                Delay -= 1;
                 return;
             }
             
@@ -239,13 +239,13 @@ namespace AutoLogin {
 
 
         public bool Delay5s() {
-            VariableDelay = 300;
+            Delay = 300;
             return true;
         }
         
 
         public bool Delay1s() {
-            VariableDelay = 60;
+            Delay = 60;
             return true;
         }
         
