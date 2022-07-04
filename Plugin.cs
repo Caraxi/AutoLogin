@@ -63,6 +63,7 @@ namespace AutoLogin {
                 actionQueue.Enqueue(OpenDataCenterMenu);
                 actionQueue.Enqueue(SelectDataCentre);
                 actionQueue.Enqueue(SelectWorld);
+                actionQueue.Enqueue(VariableDelay(10));
                 actionQueue.Enqueue(SelectCharacter);
                 actionQueue.Enqueue(SelectYes);
             }
@@ -104,6 +105,7 @@ namespace AutoLogin {
             actionQueue.Enqueue(OpenDataCenterMenu);
             actionQueue.Enqueue(SelectDataCentre);
             actionQueue.Enqueue(SelectWorld);
+            actionQueue.Enqueue(VariableDelay(10));
             actionQueue.Enqueue(SelectCharacter);
             actionQueue.Enqueue(SelectYes);
             actionQueue.Enqueue(Delay5s);
